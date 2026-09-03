@@ -1,0 +1,65 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: room-mysql
+
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: roomdb
+
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+    networks:
+      - backend-network
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot123"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  backend:
+    build: ./backend
+    container_name: room-flask
+
+    ports:
+      - "5001:5001"
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+    networks:
+      - frontend-network
+      - backend-network
+
+
+  frontend:
+    build: ./frontend
+    container_name: room-react
+
+    ports:
+      - "3000:3000"
+
+    depends_on:
+      - backend
+
+    networks:
+      - frontend-network
+
+
+networks:
+
+  frontend-network:
+    driver: bridge
+
+  backend-network:
+    driver: bridge
+    internal: true
+
+
+volumes:
+  mysql-data:
